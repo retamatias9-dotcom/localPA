@@ -24,8 +24,11 @@ export default function Catalog() {
   );
 
   const filtrados = useMemo(() => {
+    const palabras = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+
     return productos.filter((p) => {
-      const matchNombre = p.nombre.toLowerCase().includes(search.trim().toLowerCase());
+      const nombre = p.nombre.toLowerCase();
+      const matchNombre = palabras.every((palabra) => nombre.includes(palabra));
       const matchCategoria = categoria ? p.categoria === categoria : true;
       return matchNombre && matchCategoria;
     });
