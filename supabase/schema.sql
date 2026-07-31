@@ -6,10 +6,16 @@ create table if not exists public.productos (
   nombre text not null,
   descripcion text not null default '',
   precio numeric not null default 0,
+  precio_kilo numeric,
+  precio_por_kilo boolean not null default false,
   imagen_url text not null default '',
   categoria text not null default '',
   created_at timestamptz not null default now()
 );
+
+-- 1.1 Si la tabla ya existía antes de sumar el precio por kilo/bolsa, agregar las columnas nuevas
+alter table public.productos add column if not exists precio_kilo numeric;
+alter table public.productos add column if not exists precio_por_kilo boolean not null default false;
 
 -- 2. Habilitar Row Level Security
 alter table public.productos enable row level security;

@@ -55,15 +55,15 @@ export default function Catalog() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <Navbar />
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-xl font-semibold text-gray-900">Productos</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Productos</h1>
           <button
             onClick={openCreateForm}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 sm:w-auto"
           >
             + Nuevo producto
           </button>
@@ -75,12 +75,12 @@ export default function Catalog() {
             placeholder="Buscar por nombre..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
           />
           <select
             value={categoria}
             onChange={(e) => setCategoria(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-56"
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 sm:w-56"
           >
             <option value="">Todas las categorías</option>
             {categorias.map((c) => (
@@ -91,16 +91,22 @@ export default function Catalog() {
           </select>
         </div>
 
-        {loading && <p className="py-12 text-center text-gray-500">Cargando productos...</p>}
+        {loading && (
+          <p className="py-12 text-center text-gray-500 dark:text-gray-400">
+            Cargando productos...
+          </p>
+        )}
 
         {error && (
-          <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">
+          <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400">
             Error al cargar productos: {error}
           </p>
         )}
 
         {!loading && !error && filtrados.length === 0 && (
-          <p className="py-12 text-center text-gray-500">No se encontraron productos.</p>
+          <p className="py-12 text-center text-gray-500 dark:text-gray-400">
+            No se encontraron productos.
+          </p>
         )}
 
         {!loading && !error && filtrados.length > 0 && (
@@ -114,7 +120,7 @@ export default function Catalog() {
                       e.preventDefault();
                       openEditForm(producto);
                     }}
-                    className="rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-gray-700 shadow hover:bg-white"
+                    className="rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-gray-700 shadow hover:bg-white dark:bg-gray-900/90 dark:text-gray-200 dark:hover:bg-gray-900"
                   >
                     Editar
                   </button>
@@ -124,7 +130,7 @@ export default function Catalog() {
                       setDeletingProducto(producto);
                       setDeleteError(null);
                     }}
-                    className="rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-red-600 shadow hover:bg-white"
+                    className="rounded-md bg-white/90 px-2 py-1 text-xs font-medium text-red-600 shadow hover:bg-white dark:bg-gray-900/90 dark:text-red-400 dark:hover:bg-gray-900"
                   >
                     Eliminar
                   </button>
