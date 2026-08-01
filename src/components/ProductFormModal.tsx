@@ -23,8 +23,8 @@ const emptyForm: FormState = {
 };
 
 const inputClass =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500';
-const labelClass = 'mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300';
+  'w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm text-stone-800 placeholder-stone-400 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/40 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder-stone-500';
+const labelClass = 'mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300';
 
 export default function ProductFormModal({
   producto,
@@ -65,23 +65,23 @@ export default function ProductFormModal({
       precio_kilo: form.precio_por_kilo ? (form.precio_kilo as number) : null,
     });
     setSubmitting(false);
-    if (error) {
-      setError(error);
-    } else {
+    // Si hubo un error de guardado, el toast del padre ya lo avisó; dejamos el modal
+    // abierto para que se pueda reintentar sin perder lo cargado.
+    if (!error) {
       onClose();
     }
   }
 
   return (
     <div
-      className="fixed inset-0 z-20 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-20 flex items-center justify-center bg-stone-900/50 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900"
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl dark:bg-stone-900"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <h2 className="mb-4 font-heading text-xl font-semibold text-stone-800 dark:text-stone-100">
           {producto ? 'Editar producto' : 'Nuevo producto'}
         </h2>
 
@@ -108,12 +108,12 @@ export default function ProductFormModal({
             />
           </div>
 
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="flex items-center gap-2 text-sm font-medium text-stone-700 dark:text-stone-300">
             <input
               type="checkbox"
               checked={form.precio_por_kilo}
               onChange={(e) => setForm({ ...form, precio_por_kilo: e.target.checked })}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600"
+              className="h-4 w-4 rounded border-stone-300 accent-amber-500 focus:ring-amber-400 dark:border-stone-600"
             />
             Vender por kilo y por bolsa
           </label>
@@ -199,7 +199,7 @@ export default function ProductFormModal({
           </div>
 
           {error && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400">
+            <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400">
               {error}
             </p>
           )}
@@ -208,14 +208,14 @@ export default function ProductFormModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+              className="rounded-xl border border-stone-200 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-200 dark:hover:bg-stone-800"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-900 transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? 'Guardando...' : 'Guardar'}
             </button>
