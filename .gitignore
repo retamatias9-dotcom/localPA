@@ -16,6 +16,16 @@ dist-ssr
 .env
 .env.local
 
+# Certificados de ARCA: la clave privada NUNCA se sube al repo.
+# Si se pierde hay que generar todo de nuevo y volver a darlo de alta en ARCA.
+*.key
+*.crt
+*.cr
+*.csr
+*.pem
+*.p12
+*.pfx
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
+import { isAdmin } from '../lib/admin';
 
 export default function Navbar() {
   const { session, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
+  const admin = isAdmin(session);
 
   useEffect(() => {
     function handleScroll() {
@@ -50,6 +52,14 @@ export default function Navbar() {
         </Link>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          {admin && (
+            <Link
+              to="/admin"
+              className="rounded-xl border border-stone-200 px-2.5 py-1.5 text-sm font-medium text-stone-700 transition hover:bg-stone-50 dark:border-stone-700 dark:text-stone-200 dark:hover:bg-stone-800 sm:px-3"
+            >
+              Admin
+            </Link>
+          )}
           <button
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}

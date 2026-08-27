@@ -5,23 +5,31 @@ import ProductCard from '../components/ProductCard';
 import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import ProductFormModal from '../components/ProductFormModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import VentaModal from '../components/VentaModal';
 import ScrollToTopButton from '../components/ScrollToTopButton';
+import { useAuth } from '../hooks/useAuth';
 import { useProducts } from '../hooks/useProducts';
-import type { Producto, ProductoFormData } from '../types';
+import type { Producto, ProductoFormData, TipoVenta } from '../types';
 
 const PAGE_SIZE = 24;
 
+// 'carga' = orden en que se cargaron (el más nuevo primero, como viene de la base).
+type Orden = 'carga' | 'alfabetico';
+
 export default function Catalog() {
-  const { productos, loading, error, createProducto, updateProducto, deleteProducto } =
+  const { session } = useAuth();
+  const { productos, loading, error, createProducto, updateProducto, deleteProducto, venderProducto } =
     useProducts();
 
   const [search, setSearch] = useState('');
   const [categoria, setCategoria] = useState('');
+  const [orden, setOrden] = useState<Orden>('carga');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showForm, setShowForm] = useState(false);
   const [editingProducto, setEditingProducto] = useState<Producto | null>(null);
   const [deletingProducto, setDeletingProducto] = useState<Producto | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [vendingProducto, setVendingProducto] = useState<Producto | null>(null);
 
   const categorias = useMemo(
     () => Array.from(new Set(productos.map((p) => p.categoria).filter(Boolean))).sort(),
@@ -31,18 +39,23 @@ export default function Catalog() {
   const filtrados = useMemo(() => {
     const palabras = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
 
-    return productos.filter((p) => {
+    const resultado = productos.filter((p) => {
       const nombre = p.nombre.toLowerCase();
       const matchNombre = palabras.every((palabra) => nombre.includes(palabra));
       const matchCategoria = categoria ? p.categoria === categoria : true;
       return matchNombre && matchCategoria;
     });
-  }, [productos, search, categoria]);
 
-  // Al cambiar la búsqueda o la categoría, volvemos a mostrar la primera tanda.
+    // 'carga' ya viene ordenado por fecha desde la base, no hay que tocar nada.
+    return orden === 'alfabetico'
+      ? [...resultado].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+      : resultado;
+  }, [productos, search, categoria, orden]);
+
+  // Al cambiar la búsqueda, la categoría o el orden, volvemos a mostrar la primera tanda.
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [search, categoria]);
+  }, [search, categoria, orden]);
 
   const visibles = filtrados.slice(0, visibleCount);
   const hayMas = visibleCount < filtrados.length;
@@ -99,6 +112,19 @@ export default function Catalog() {
       toast.success('Producto eliminado');
       setDeletingProducto(null);
     }
+  }
+
+  async function handleVentaConfirm(cantidad: number, tipo: TipoVenta) {
+    if (!vendingProducto) return { error: 'No hay producto seleccionado.' };
+    const vendidoPor =
+      (session?.user.user_metadata?.name as string | undefined) ?? session?.user.email ?? null;
+    const result = await venderProducto(vendingProducto, cantidad, tipo, vendidoPor);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success(tipo === 'kilo' ? 'Bolsa abierta registrada ✓' : 'Venta registrada ✓');
+    }
+    return result;
   }
 
   const resultLabel = search.trim()
@@ -184,8 +210,23 @@ export default function Catalog() {
           ))}
         </div>
 
-        {!loading && !error && (
-          <p className="mb-4 text-sm text-stone-500 dark:text-stone-400">{resultLabel}</p>
+        {!error && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-stone-500 dark:text-stone-400">
+              {loading ? '' : resultLabel}
+            </p>
+            <label className="flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400">
+              Ordenar por
+              <select
+                value={orden}
+                onChange={(e) => setOrden(e.target.value as Orden)}
+                className="rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 shadow-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/40 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200"
+              >
+                <option value="carga">Como se cargaron</option>
+                <option value="alfabetico">A - Z (alfabético)</option>
+              </select>
+            </label>
+          </div>
         )}
 
         {error && (
@@ -233,7 +274,7 @@ export default function Catalog() {
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {visibles.map((producto) => (
                 <div key={producto.id} className="relative">
-                  <ProductCard producto={producto} />
+                  <ProductCard producto={producto} onVender={setVendingProducto} />
                   <div className="absolute right-2 top-2 z-10 flex gap-1">
                     <button
                       onClick={(e) => {
@@ -282,6 +323,14 @@ export default function Catalog() {
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeletingProducto(null)}
           loading={deleting}
+        />
+      )}
+
+      {vendingProducto && (
+        <VentaModal
+          producto={vendingProducto}
+          onClose={() => setVendingProducto(null)}
+          onConfirm={handleVentaConfirm}
         />
       )}
 

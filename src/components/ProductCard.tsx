@@ -2,8 +2,14 @@ import { Link } from 'react-router-dom';
 import type { Producto } from '../types';
 import { formatPrecio } from '../lib/format';
 
-export default function ProductCard({ producto }: { producto: Producto }) {
+interface ProductCardProps {
+  producto: Producto;
+  onVender?: (producto: Producto) => void;
+}
+
+export default function ProductCard({ producto, onVender }: ProductCardProps) {
   const tieneKilo = producto.precio_por_kilo && producto.precio_kilo != null;
+  const sinStock = producto.stock <= 0;
 
   return (
     <Link
@@ -46,6 +52,20 @@ export default function ProductCard({ producto }: { producto: Producto }) {
           <p className="text-xs font-medium text-stone-500 dark:text-stone-400">
             {formatPrecio(producto.precio_kilo!)} / kg
           </p>
+        )}
+
+        {onVender && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onVender(producto);
+            }}
+            disabled={sinStock}
+            className="mt-2 w-full rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-semibold text-stone-900 transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-400 sm:py-2 sm:text-sm dark:disabled:bg-stone-800 dark:disabled:text-stone-500"
+          >
+            {sinStock ? 'Sin stock' : 'Vender'}
+          </button>
         )}
       </div>
     </Link>

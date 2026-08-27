@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Producto, ProductoFormData } from '../types';
+import { mostrarAvisoPago } from '../components/AvisoPago';
+import type { Producto, ProductoFormData, TipoVenta } from '../types';
 
 export function useProducts() {
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -19,6 +20,7 @@ export function useProducts() {
       setError(error.message);
     } else {
       setProductos(data as Producto[]);
+      mostrarAvisoPago();
     }
     setLoading(false);
   }, []);
@@ -59,6 +61,43 @@ export function useProducts() {
     return { error: null };
   }
 
+  // Registra un movimiento y descuenta el stock del producto correspondiente.
+  // La cantidad siempre son bolsas. Abrir una bolsa (tipo 'kilo') descuenta stock
+  // igual que una venta, pero no lleva importe: no es una venta.
+  async function venderProducto(
+    producto: Producto,
+    cantidad: number,
+    tipo: TipoVenta,
+    vendidoPor: string | null
+  ) {
+    const precioUnitario = tipo === 'kilo' ? 0 : producto.precio;
+    const total = precioUnitario * cantidad;
+    const nuevoStock = Math.max(0, producto.stock - cantidad);
+
+    const { error: ventaError } = await supabase.from('ventas').insert({
+      producto_id: producto.id,
+      producto_nombre: producto.nombre,
+      marca: producto.marca || null,
+      cantidad,
+      tipo,
+      precio_unitario: precioUnitario,
+      total,
+      vendido_por: vendidoPor,
+    });
+    if (ventaError) return { error: ventaError.message };
+
+    const { data, error: stockError } = await supabase
+      .from('productos')
+      .update({ stock: nuevoStock })
+      .eq('id', producto.id)
+      .select()
+      .single();
+
+    if (stockError) return { error: stockError.message };
+    setProductos((prev) => prev.map((p) => (p.id === producto.id ? (data as Producto) : p)));
+    return { error: null, producto: data as Producto };
+  }
+
   return {
     productos,
     loading,
@@ -67,5 +106,6 @@ export function useProducts() {
     createProducto,
     updateProducto,
     deleteProducto,
+    venderProducto,
   };
 }

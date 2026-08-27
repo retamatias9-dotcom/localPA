@@ -4,22 +4,26 @@ import { toast } from 'sonner';
 import Navbar from '../components/Navbar';
 import ProductFormModal from '../components/ProductFormModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import VentaModal from '../components/VentaModal';
 import ScrollToTopButton from '../components/ScrollToTopButton';
 import { supabase } from '../lib/supabase';
-import { formatPrecio } from '../lib/format';
+import { formatCantidad, formatPrecio } from '../lib/format';
+import { useAuth } from '../hooks/useAuth';
 import { useProducts } from '../hooks/useProducts';
 import type { Producto } from '../types';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { updateProducto, deleteProducto } = useProducts();
+  const { session } = useAuth();
+  const { updateProducto, deleteProducto, venderProducto } = useProducts();
 
   const [producto, setProducto] = useState<Producto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showVenta, setShowVenta] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -131,7 +135,29 @@ export default function ProductDetail() {
                 {producto.descripcion}
               </p>
 
+              <p className="mt-3 text-sm text-stone-500 dark:text-stone-400">
+                Stock:{' '}
+                <span
+                  className={
+                    producto.stock > 0
+                      ? 'font-semibold text-stone-700 dark:text-stone-200'
+                      : 'font-semibold text-red-600 dark:text-red-400'
+                  }
+                >
+                  {producto.stock > 0
+                    ? `${formatCantidad(producto.stock)} bolsa${producto.stock === 1 ? '' : 's'}`
+                    : 'sin stock'}
+                </span>
+              </p>
+
               <div className="mt-6 flex flex-wrap gap-2">
+                <button
+                  onClick={() => setShowVenta(true)}
+                  disabled={producto.stock <= 0}
+                  className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-900 transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-400 dark:disabled:bg-stone-800 dark:disabled:text-stone-500"
+                >
+                  Vender
+                </button>
                 <button
                   onClick={() => setShowForm(true)}
                   className="rounded-xl border border-stone-200 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-200 dark:hover:bg-stone-800"
@@ -174,6 +200,28 @@ export default function ProductDetail() {
           onConfirm={handleDeleteConfirm}
           onCancel={() => setShowDelete(false)}
           loading={deleting}
+        />
+      )}
+
+      {showVenta && producto && (
+        <VentaModal
+          producto={producto}
+          onClose={() => setShowVenta(false)}
+          onConfirm={async (cantidad, tipo) => {
+            const vendidoPor =
+              (session?.user.user_metadata?.name as string | undefined) ??
+              session?.user.email ??
+              null;
+            const result = await venderProducto(producto, cantidad, tipo, vendidoPor);
+            if (result.error) {
+              toast.error(result.error);
+            } else {
+              toast.success(tipo === 'kilo' ? 'Bolsa abierta registrada ✓' : 'Venta registrada ✓');
+              // El hook devuelve el producto ya actualizado, con el stock recalculado.
+              if (result.producto) setProducto(result.producto);
+            }
+            return result;
+          }}
         />
       )}
 

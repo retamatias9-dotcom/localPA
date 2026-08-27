@@ -7,9 +7,10 @@ interface ProductFormModalProps {
   onSubmit: (data: ProductoFormData) => Promise<{ error: string | null }>;
 }
 
-type FormState = Omit<ProductoFormData, 'precio' | 'precio_kilo'> & {
+type FormState = Omit<ProductoFormData, 'precio' | 'precio_kilo' | 'stock'> & {
   precio: number | '';
   precio_kilo: number | '';
+  stock: number | '';
 };
 
 const emptyForm: FormState = {
@@ -20,6 +21,8 @@ const emptyForm: FormState = {
   precio_por_kilo: false,
   imagen_url: '',
   categoria: '',
+  marca: '',
+  stock: '',
 };
 
 const inputClass =
@@ -41,6 +44,8 @@ export default function ProductFormModal({
           precio_por_kilo: producto.precio_por_kilo,
           imagen_url: producto.imagen_url,
           categoria: producto.categoria,
+          marca: producto.marca ?? '',
+          stock: producto.stock ?? '',
         }
       : emptyForm
   );
@@ -63,6 +68,7 @@ export default function ProductFormModal({
       ...form,
       precio: form.precio,
       precio_kilo: form.precio_por_kilo ? (form.precio_kilo as number) : null,
+      stock: form.stock === '' ? 0 : form.stock,
     });
     setSubmitting(false);
     // Si hubo un error de guardado, el toast del padre ya lo avisó; dejamos el modal
@@ -175,13 +181,39 @@ export default function ProductFormModal({
             </div>
           )}
 
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>Categoría</label>
+              <input
+                type="text"
+                required
+                value={form.categoria}
+                onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Marca</label>
+              <input
+                type="text"
+                placeholder="Opcional"
+                value={form.marca}
+                onChange={(e) => setForm({ ...form, marca: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+          </div>
+
           <div>
-            <label className={labelClass}>Categoría</label>
+            <label className={labelClass}>Stock (bolsas)</label>
             <input
-              type="text"
-              required
-              value={form.categoria}
-              onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+              type="number"
+              min={0}
+              placeholder="0"
+              value={form.stock}
+              onChange={(e) =>
+                setForm({ ...form, stock: e.target.value === '' ? '' : Number(e.target.value) })
+              }
               className={inputClass}
             />
           </div>
