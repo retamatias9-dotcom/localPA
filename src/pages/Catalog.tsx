@@ -7,6 +7,7 @@ import ProductFormModal from '../components/ProductFormModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import VentaModal from '../components/VentaModal';
 import ScrollToTopButton from '../components/ScrollToTopButton';
+import { contarBusqueda } from '../components/AvisoPago';
 import { useAuth } from '../hooks/useAuth';
 import { useProducts } from '../hooks/useProducts';
 import type { Producto, ProductoFormData, TipoVenta } from '../types';
@@ -51,6 +52,19 @@ export default function Catalog() {
       ? [...resultado].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
       : resultado;
   }, [productos, search, categoria, orden]);
+
+  // Cuenta una búsqueda recién cuando el usuario dejó de tipear, para no sumar una por tecla.
+  const ultimaBusqueda = useRef('');
+  useEffect(() => {
+    const termino = search.trim().toLowerCase();
+    if (!termino || termino === ultimaBusqueda.current) return;
+
+    const id = setTimeout(() => {
+      ultimaBusqueda.current = termino;
+      contarBusqueda();
+    }, 800);
+    return () => clearTimeout(id);
+  }, [search]);
 
   // Al cambiar la búsqueda, la categoría o el orden, volvemos a mostrar la primera tanda.
   useEffect(() => {

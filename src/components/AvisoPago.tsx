@@ -4,36 +4,59 @@ import { useLocation } from 'react-router-dom';
 const MENSAJE =
   'Recuerde efectuar el pago para poder seguir disfrutando de este sistema, Comunicarse con Matias para Coordinar el pago';
 
-/** Cuánto tiempo permanece visible el cartel (1 minuto). */
-const DURACION_MS = 60_000;
+/** Cuánto dura el cartel al entrar o al cargar datos nuevos. */
+const DURACION_CARGA_MS = 60_000;
+/** Cuánto dura el cartel que tapa los precios cada tanda de búsquedas. */
+const DURACION_BUSQUEDA_MS = 5_000;
+/** Cada cuántas búsquedas se tapa el catálogo. */
+const BUSQUEDAS_POR_AVISO = 4;
 
-type Listener = () => void;
+type Opciones = { duracionMs: number; bloqueante: boolean };
+type Listener = (opciones: Opciones) => void;
+
 const listeners = new Set<Listener>();
+let busquedas = 0;
 
-/** Vuelve a mostrar el cartel (o reinicia el minuto) cuando se carga algo nuevo. */
-export function mostrarAvisoPago() {
-  listeners.forEach((fn) => fn());
+/** Vuelve a mostrar el cartel (o reinicia el temporizador) cuando se carga algo nuevo. */
+export function mostrarAvisoPago(
+  duracionMs = DURACION_CARGA_MS,
+  bloqueante = false
+) {
+  listeners.forEach((fn) => fn({ duracionMs, bloqueante }));
+}
+
+/**
+ * Registra una búsqueda del catálogo. Cada BUSQUEDAS_POR_AVISO tapa los precios
+ * con el cartel durante unos segundos, sin dejar cerrarlo.
+ */
+export function contarBusqueda() {
+  busquedas += 1;
+  if (busquedas % BUSQUEDAS_POR_AVISO === 0) {
+    mostrarAvisoPago(DURACION_BUSQUEDA_MS, true);
+  }
 }
 
 export default function AvisoPago() {
   const location = useLocation();
   const [visible, setVisible] = useState(false);
-  const [restante, setRestante] = useState(DURACION_MS / 1000);
+  const [bloqueante, setBloqueante] = useState(false);
+  const [restante, setRestante] = useState(DURACION_CARGA_MS / 1000);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const mostrar = useCallback(() => {
+  const mostrar = useCallback((opciones: Opciones) => {
     setVisible(true);
-    setRestante(DURACION_MS / 1000);
+    setBloqueante(opciones.bloqueante);
+    setRestante(Math.ceil(opciones.duracionMs / 1000));
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setVisible(false), DURACION_MS);
+    timeoutRef.current = setTimeout(() => setVisible(false), opciones.duracionMs);
   }, []);
 
   // Se muestra al entrar/refrescar y en cada cambio de pantalla
   useEffect(() => {
-    mostrar();
+    mostrar({ duracionMs: DURACION_CARGA_MS, bloqueante: false });
   }, [location.pathname, mostrar]);
 
-  // Se muestra cuando algún hook avisa que cargó datos nuevos
+  // Se muestra cuando algún hook avisa que cargó datos nuevos o que hubo búsquedas
   useEffect(() => {
     listeners.add(mostrar);
     return () => {
@@ -41,7 +64,7 @@ export default function AvisoPago() {
     };
   }, [mostrar]);
 
-  // Cuenta regresiva del minuto
+  // Cuenta regresiva
   useEffect(() => {
     if (!visible) return;
     const id = setInterval(() => setRestante((s) => (s > 0 ? s - 1 : 0)), 1000);
@@ -70,9 +93,9 @@ export default function AvisoPago() {
     <div
       role="alertdialog"
       aria-modal="true"
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/70 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/80 p-4 backdrop-blur-md"
     >
-      <div className="w-full max-w-2xl animate-aviso-pago rounded-3xl border-4 border-amber-400 bg-amber-50 p-6 text-center shadow-2xl sm:p-10 dark:bg-stone-900">
+      <div className="animate-aviso-pago w-full max-w-2xl rounded-3xl border-4 border-amber-400 bg-amber-50 p-6 text-center shadow-2xl sm:p-10 dark:bg-stone-900">
         <span className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-400 text-stone-900 sm:h-20 sm:w-20">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -98,16 +121,23 @@ export default function AvisoPago() {
           {MENSAJE}
         </p>
 
-        <button
-          onClick={() => setVisible(false)}
-          className="mt-8 w-full rounded-2xl bg-amber-400 px-6 py-4 font-heading text-lg font-bold text-stone-900 shadow-lg transition hover:bg-amber-300 sm:w-auto sm:px-10"
-        >
-          Entendido
-        </button>
-
-        <p className="mt-4 text-sm font-medium text-stone-500 dark:text-stone-400">
-          Este aviso se cierra solo en {restante}s
-        </p>
+        {bloqueante ? (
+          <p className="mt-8 font-heading text-lg font-bold text-stone-700 dark:text-stone-300">
+            Los precios vuelven en {restante}s
+          </p>
+        ) : (
+          <>
+            <button
+              onClick={() => setVisible(false)}
+              className="mt-8 w-full rounded-2xl bg-amber-400 px-6 py-4 font-heading text-lg font-bold text-stone-900 shadow-lg transition hover:bg-amber-300 sm:w-auto sm:px-10"
+            >
+              Entendido
+            </button>
+            <p className="mt-4 text-sm font-medium text-stone-500 dark:text-stone-400">
+              Este aviso se cierra solo en {restante}s
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
