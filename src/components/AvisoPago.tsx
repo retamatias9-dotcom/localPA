@@ -95,8 +95,16 @@ export default function AvisoPago() {
       aria-modal="true"
       className="fixed inset-0 z-[100] flex items-center justify-center bg-stone-950/80 p-4 backdrop-blur-md"
     >
-      <div className="animate-aviso-pago w-full max-w-2xl rounded-3xl border-4 border-amber-400 bg-amber-50 p-6 text-center shadow-2xl sm:p-10 dark:bg-stone-900">
-        <span className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-400 text-stone-900 sm:h-20 sm:w-20">
+      <div
+        className={`animate-aviso-pago w-full rounded-3xl border-4 border-amber-400 bg-amber-50 text-center shadow-2xl dark:bg-stone-900 ${
+          bloqueante ? 'max-w-sm p-5' : 'max-w-2xl p-6 sm:p-10'
+        }`}
+      >
+        <span
+          className={`mx-auto flex items-center justify-center rounded-2xl bg-amber-400 text-stone-900 ${
+            bloqueante ? 'mb-3 h-11 w-11' : 'mb-5 h-16 w-16 sm:h-20 sm:w-20'
+          }`}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -105,7 +113,7 @@ export default function AvisoPago() {
             strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="h-9 w-9 sm:h-11 sm:w-11"
+            className={bloqueante ? 'h-6 w-6' : 'h-9 w-9 sm:h-11 sm:w-11'}
           >
             <path d="M12 9v4" />
             <path d="M12 17h.01" />
@@ -113,16 +121,24 @@ export default function AvisoPago() {
           </svg>
         </span>
 
-        <h2 className="mb-4 font-heading text-2xl font-extrabold tracking-tight text-amber-600 uppercase sm:text-3xl dark:text-amber-400">
+        <h2
+          className={`font-heading font-extrabold tracking-tight text-amber-600 uppercase dark:text-amber-400 ${
+            bloqueante ? 'mb-2 text-base' : 'mb-4 text-2xl sm:text-3xl'
+          }`}
+        >
           Aviso de pago
         </h2>
 
-        <p className="font-heading text-xl leading-snug font-bold text-stone-900 sm:text-3xl dark:text-stone-50">
+        <p
+          className={`font-heading leading-snug font-bold text-stone-900 dark:text-stone-50 ${
+            bloqueante ? 'text-sm' : 'text-xl sm:text-3xl'
+          }`}
+        >
           {MENSAJE}
         </p>
 
         {bloqueante ? (
-          <p className="mt-8 font-heading text-lg font-bold text-stone-700 dark:text-stone-300">
+          <p className="mt-4 font-heading text-sm font-bold text-stone-700 dark:text-stone-300">
             Los precios vuelven en {restante}s
           </p>
         ) : (
