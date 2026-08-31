@@ -4,7 +4,6 @@ import { AuthProvider } from './hooks/useAuth';
 import { ThemeProvider, useTheme } from './hooks/useTheme';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
-import AvisoPago from './components/AvisoPago';
 import Login from './pages/Login';
 import Catalog from './pages/Catalog';
 import ProductDetail from './pages/ProductDetail';
@@ -30,7 +29,6 @@ export default function App() {
       <AppToaster />
       <BrowserRouter>
         <AuthProvider>
-          <AvisoPago />
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route

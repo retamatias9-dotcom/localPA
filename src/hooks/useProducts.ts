@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { mostrarAvisoPago } from '../components/AvisoPago';
 import type { Producto, ProductoFormData, TipoVenta } from '../types';
 
 export function useProducts() {
@@ -20,7 +19,6 @@ export function useProducts() {
       setError(error.message);
     } else {
       setProductos(data as Producto[]);
-      mostrarAvisoPago();
     }
     setLoading(false);
   }, []);
