@@ -47,7 +47,7 @@ export default function Navbar() {
             </svg>
           </span>
           <span className="min-w-0 truncate font-heading text-base font-bold text-stone-800 sm:text-lg dark:text-stone-100">
-            Catálogo de Precios
+            Planeta Animal Catalogo 
           </span>
         </Link>
 

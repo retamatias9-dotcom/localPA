@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { AuthProvider } from './hooks/useAuth';
 import { ThemeProvider, useTheme } from './hooks/useTheme';
+import AvisoHosting from './components/AvisoHosting';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Login from './pages/Login';
@@ -27,6 +28,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <AppToaster />
+      <AvisoHosting />
       <BrowserRouter>
         <AuthProvider>
           <Routes>

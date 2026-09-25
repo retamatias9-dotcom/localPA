@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import Navbar from '../components/Navbar';
 import ProductCard from '../components/ProductCard';
@@ -11,7 +11,38 @@ import { useAuth } from '../hooks/useAuth';
 import { useProducts } from '../hooks/useProducts';
 import type { Producto, ProductoFormData, TipoVenta } from '../types';
 
-const PAGE_SIZE = 24;
+const FILAS_POR_PAGINA = 4;
+
+// Columnas de la grilla según el ancho (mismos cortes que sm / lg / xl de Tailwind).
+function calcularColumnas() {
+  if (window.matchMedia('(min-width: 1280px)').matches) return 4;
+  if (window.matchMedia('(min-width: 1024px)').matches) return 3;
+  if (window.matchMedia('(min-width: 640px)').matches) return 2;
+  return 1;
+}
+
+function useColumnas() {
+  const [columnas, setColumnas] = useState(calcularColumnas);
+  useEffect(() => {
+    const onResize = () => setColumnas(calcularColumnas());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return columnas;
+}
+
+// Números de página a mostrar, con '…' cuando hay muchas.
+function paginasVisibles(actual: number, total: number): (number | '…')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const paginas: (number | '…')[] = [1];
+  const desde = Math.max(2, actual - 1);
+  const hasta = Math.min(total - 1, actual + 1);
+  if (desde > 2) paginas.push('…');
+  for (let i = desde; i <= hasta; i++) paginas.push(i);
+  if (hasta < total - 1) paginas.push('…');
+  paginas.push(total);
+  return paginas;
+}
 
 // 'carga' = orden en que se cargaron (el más nuevo primero, como viene de la base).
 type Orden = 'carga' | 'alfabetico';
@@ -24,7 +55,7 @@ export default function Catalog() {
   const [search, setSearch] = useState('');
   const [categoria, setCategoria] = useState('');
   const [orden, setOrden] = useState<Orden>('carga');
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [pagina, setPagina] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [editingProducto, setEditingProducto] = useState<Producto | null>(null);
   const [deletingProducto, setDeletingProducto] = useState<Producto | null>(null);
@@ -52,31 +83,23 @@ export default function Catalog() {
       : resultado;
   }, [productos, search, categoria, orden]);
 
-  // Al cambiar la búsqueda, la categoría o el orden, volvemos a mostrar la primera tanda.
+  const columnas = useColumnas();
+  const porPagina = columnas * FILAS_POR_PAGINA;
+  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / porPagina));
+
+  // Al cambiar la búsqueda, la categoría o el orden, volvemos a la primera página.
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
+    setPagina(1);
   }, [search, categoria, orden]);
 
-  const visibles = filtrados.slice(0, visibleCount);
-  const hayMas = visibleCount < filtrados.length;
+  // Si cambia el tamaño de página (resize) o se borran productos, no quedarse en una página vacía.
+  const paginaActual = Math.min(pagina, totalPaginas);
+  const visibles = filtrados.slice((paginaActual - 1) * porPagina, paginaActual * porPagina);
 
-  // Scroll infinito: cuando el centinela entra en pantalla, se muestra una tanda más.
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el || !hayMas) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filtrados.length));
-        }
-      },
-      { rootMargin: '600px' }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hayMas, filtrados.length]);
+  function irAPagina(n: number) {
+    setPagina(n);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   function openCreateForm() {
     setEditingProducto(null);
@@ -299,10 +322,43 @@ export default function Catalog() {
               ))}
             </div>
 
-            {hayMas && (
-              <div ref={sentinelRef} className="flex justify-center py-8">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
-              </div>
+            {totalPaginas > 1 && (
+              <nav className="mt-8 flex flex-wrap items-center justify-center gap-1.5" aria-label="Paginado">
+                <button
+                  onClick={() => irAPagina(paginaActual - 1)}
+                  disabled={paginaActual === 1}
+                  className="rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium text-stone-600 shadow-sm transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
+                >
+                  Anterior
+                </button>
+                {paginasVisibles(paginaActual, totalPaginas).map((n, i) =>
+                  n === '…' ? (
+                    <span key={`e${i}`} className="px-1 text-sm text-stone-400">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={n}
+                      onClick={() => irAPagina(n)}
+                      aria-current={n === paginaActual ? 'page' : undefined}
+                      className={`min-w-9 rounded-xl px-3 py-1.5 text-sm font-medium transition ${
+                        n === paginaActual
+                          ? 'bg-amber-400 text-stone-900 shadow-sm'
+                          : 'border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800'
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  )
+                )}
+                <button
+                  onClick={() => irAPagina(paginaActual + 1)}
+                  disabled={paginaActual === totalPaginas}
+                  className="rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium text-stone-600 shadow-sm transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
+                >
+                  Siguiente
+                </button>
+              </nav>
             )}
           </>
         )}
