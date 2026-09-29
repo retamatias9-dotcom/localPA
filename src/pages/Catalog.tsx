@@ -9,6 +9,7 @@ import VentaModal from '../components/VentaModal';
 import ScrollToTopButton from '../components/ScrollToTopButton';
 import { useAuth } from '../hooks/useAuth';
 import { useProducts } from '../hooks/useProducts';
+import { DEMORA_CARGA_MS } from '../lib/demora';
 import type { Producto, ProductoFormData, TipoVenta } from '../types';
 
 const FILAS_POR_PAGINA = 4;
@@ -49,10 +50,18 @@ type Orden = 'carga' | 'alfabetico';
 
 export default function Catalog() {
   const { session } = useAuth();
-  const { productos, loading, error, createProducto, updateProducto, deleteProducto, venderProducto } =
-    useProducts();
+  const {
+    productos,
+    loading: cargandoProductos,
+    error,
+    createProducto,
+    updateProducto,
+    deleteProducto,
+    venderProducto,
+  } = useProducts();
 
   const [search, setSearch] = useState('');
+  const [buscando, setBuscando] = useState(false);
   const [categoria, setCategoria] = useState('');
   const [orden, setOrden] = useState<Orden>('carga');
   const [pagina, setPagina] = useState(1);
@@ -86,6 +95,20 @@ export default function Catalog() {
   const columnas = useColumnas();
   const porPagina = columnas * FILAS_POR_PAGINA;
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / porPagina));
+
+  // Cada búsqueda muestra la animación de carga durante la demora; si se sigue
+  // escribiendo, la espera arranca de nuevo.
+  useEffect(() => {
+    if (!search.trim()) {
+      setBuscando(false);
+      return;
+    }
+    setBuscando(true);
+    const id = setTimeout(() => setBuscando(false), DEMORA_CARGA_MS);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  const loading = cargandoProductos || buscando;
 
   // Al cambiar la búsqueda, la categoría o el orden, volvemos a la primera página.
   useEffect(() => {

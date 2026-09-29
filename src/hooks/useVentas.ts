@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { demoraCarga } from '../lib/demora';
 import type { FacturaData, Venta } from '../types';
 
 export function useVentas() {
@@ -10,10 +11,13 @@ export function useVentas() {
   const fetchVentas = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const { data, error } = await supabase
-      .from('ventas')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const [{ data, error }] = await Promise.all([
+      supabase
+        .from('ventas')
+        .select('*')
+        .order('created_at', { ascending: false }),
+      demoraCarga(),
+    ]);
 
     if (error) {
       setError(error.message);

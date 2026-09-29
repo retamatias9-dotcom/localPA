@@ -7,6 +7,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import VentaModal from '../components/VentaModal';
 import ScrollToTopButton from '../components/ScrollToTopButton';
 import { supabase } from '../lib/supabase';
+import { demoraCarga } from '../lib/demora';
 import { formatCantidad, formatPrecio } from '../lib/format';
 import { useAuth } from '../hooks/useAuth';
 import { useProducts } from '../hooks/useProducts';
@@ -30,19 +31,17 @@ export default function ProductDetail() {
     if (!id) return;
     setLoading(true);
     setError(null);
-    supabase
-      .from('productos')
-      .select('*')
-      .eq('id', id)
-      .single()
-      .then(({ data, error }) => {
-        if (error) {
-          setError(error.message);
-        } else {
-          setProducto(data as Producto);
-        }
-        setLoading(false);
-      });
+    Promise.all([
+      supabase.from('productos').select('*').eq('id', id).single(),
+      demoraCarga(),
+    ]).then(([{ data, error }]) => {
+      if (error) {
+        setError(error.message);
+      } else {
+        setProducto(data as Producto);
+      }
+      setLoading(false);
+    });
   }, [id]);
 
   async function handleDeleteConfirm() {
